@@ -89,6 +89,63 @@ def get_average_rating(place_name: str, ratings: dict) -> float | None:
 
 
 # -----------------------------
+# 기온별 외투 추천 멘트 함수
+# -----------------------------
+def get_outerwear_message(temp: float) -> str:
+    """
+    현재 기온(℃)에 따라 직장인 점심시간 외투 추천 멘트 반환
+    """
+    if temp >= 28:
+        return (
+            "☀️ **한여름 (28°C 이상)**\n\n"
+            "밖에 정말 더워요! 외투는 의자에 걸어두고 최대한 가볍게 나가세요. "
+            "양산이나 손풍기 챙기셨나요?"
+        )
+    elif 23 <= temp <= 27:
+        return (
+            "🌤️ **초여름 (23°C ~ 27°C)**\n\n"
+            "햇볕이 꽤 뜨겁네요. 외투 없이 셔츠나 반팔 차림으로도 충분해요. "
+            "선글라스 끼고 나가셔도 되겠는데요?"
+        )
+    elif 20 <= temp <= 22:
+        return (
+            "🍂 **활동하기 좋음 (20°C ~ 22°C)**\n\n"
+            "날씨가 딱 좋네요! 가벼운 가디건을 어깨에 걸치거나, "
+            "그냥 셔츠 한 장으로도 기분 좋게 다녀올 수 있겠어요."
+        )
+    elif 17 <= temp <= 19:
+        return (
+            "🍃 **선선함 (17°C ~ 19°C)**\n\n"
+            "그늘에선 바람이 좀 불어요. 얇은 재킷이나 바람막이 하나 "
+            "챙겨서 나가시는 게 안전해요."
+        )
+    elif 12 <= temp <= 16:
+        return (
+            "🧥 **쌀쌀함 (12°C ~ 16°C)**\n\n"
+            "공기가 제법 차갑네요. 식사하고 오실 때 추울 수 있으니 "
+            "트렌치코트나 자켓 꼭 챙겨 가세요!"
+        )
+    elif 9 <= temp <= 11:
+        return (
+            "🌬️ **추위 시작 (9°C ~ 11°C)**\n\n"
+            "오늘 꽤 쌀쌀해요. 얇게 입고 나가면 후회하실 거예요. "
+            "도톰한 점퍼나 야상 든든하게 입고 나가세요."
+        )
+    elif 5 <= temp <= 8:
+        return (
+            "🧣 **겨울 (5°C ~ 8°C)**\n\n"
+            "바람이 찹니다! 코트 깃을 세우거나 목도리를 하시는 게 좋겠어요. "
+            "따뜻하게 입고 다녀오세요."
+        )
+    else:  # temp <= 4
+        return (
+            "❄️ **한파 (4°C 이하)**\n\n"
+            "잠깐 나가는 거라도 정말 추워요! 패딩이나 가장 두꺼운 외투로 "
+            "꼭꼭 여미고 나가세요. 감기 조심!"
+        )
+
+
+# -----------------------------
 # 2. JSON 데이터 읽어오기 (랜덤 버튼이 위쪽으로 올라갈 것이므로 먼저 로드)
 # -----------------------------
 try:
@@ -113,19 +170,30 @@ ratings = load_ratings()
 # 1. 상단에 테헤란로 231 현재 기온 표시 + 랜덤 추천 버튼
 # -----------------------------
 with st.container():
-    # 1. 제목 글자 크기 줄이기 (subheader 대신 작은 헤딩 사용)
+    # 제목 글자 크기 줄이기
     st.markdown("##### 📍 테헤란로 231 현재 날씨")
 
     weather = get_current_weather(CENTER_LAT, CENTER_LON)
 
     if weather:
-        # 2. 현재 기온만 보여주고, 풍속/풍향은 숨김
-        if weather["temp"] is not None:
-            st.metric("현재 기온", f"{weather['temp']:.1f} ℃")
-        else:
-            st.metric("현재 기온", "정보 없음")
+        temp = weather.get("temp")
 
-        # 관측 시각은 그대로 표시
+        # 현재 기온 metric + 외투 추천 멘트를 한 줄에 나란히 배치
+        col_temp, col_msg = st.columns([1, 2])
+
+        with col_temp:
+            if temp is not None:
+                st.metric("현재 기온", f"{temp:.1f} ℃")
+            else:
+                st.metric("현재 기온", "정보 없음")
+
+        with col_msg:
+            if temp is not None:
+                st.markdown(get_outerwear_message(temp))
+            else:
+                st.caption("기온 정보를 불러올 수 없어 외투 추천을 표시하지 못했습니다.")
+
+        # 관측 시각은 아래에 가볍게 표시
         if weather["time"]:
             st.caption(f"관측 시각 (API 기준): {weather['time']}")
     else:
@@ -133,7 +201,7 @@ with st.container():
 
     st.markdown("---")
 
-    # 3. 랜덤으로 하나만 골라줘! 버튼을 날씨/기온 정보 바로 아래에 배치
+    # 랜덤으로 하나만 골라줘! 버튼을 날씨/기온 바로 아래에 배치
     if st.button("랜덤으로 하나만 골라줘! 🎲"):
         if df.empty:
             st.warning("맛집 데이터가 비어있습니다. restaurants.json 파일 또는 추가 기능을 확인하세요.")
