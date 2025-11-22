@@ -4,7 +4,7 @@ import random
 
 # 1. 제목 설정
 st.set_page_config(page_title="점심 뭐 먹지?", page_icon="🍱")
-st.title("오늘 점심 뭐 먹지? 🍱 (정식 Ver.)")
+st.title("오늘 점심 뭐 먹지? 🍱")
 
 # 2. JSON 데이터 읽어오기
 #    (GitHub 저장소에 함께 올린 'restaurants.json' 파일을 읽음)
