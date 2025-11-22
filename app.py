@@ -137,7 +137,6 @@ df = st.session_state.df
 
 # -----------------------------
 # 2-2. 평점 남기기 기능
-# (평점 섹션은 그대로 유지, 위치만 상단에 둠)
 # -----------------------------
 ratings = load_ratings()
 
@@ -200,41 +199,85 @@ if st.button("랜덤으로 하나만 골라줘! 🎲"):
 st.divider()  # 구분선
 
 # -----------------------------
-# 4. 전체 맛집 목록 보여주기 (평점 포함)
+# 4. 전체 맛집 목록 보여주기 (평점 포함) + 접기/펼치기 + 삭제 기능
 # -----------------------------
-st.write("--- 1.5km 이내 전체 맛집/카페 리스트 ---")
+with st.expander("📋 1.5km 이내 전체 맛집/카페 리스트", expanded=False):
+    st.write("--- 1.5km 이내 전체 맛집/카페 리스트 ---")
 
-# 평점을 컬럼으로 붙이기
-ratings = load_ratings()  # 최신 값 다시 로드
-df_with_rating = df.copy()
-df_with_rating["rating"] = df_with_rating["place_name"].apply(
-    lambda name: get_average_rating(name, ratings)
-)
+    # 평점을 컬럼으로 붙이기
+    ratings = load_ratings()  # 최신 값 다시 로드
+    df_with_rating = df.copy()
+    if not df_with_rating.empty:
+        df_with_rating["rating"] = df_with_rating["place_name"].apply(
+            lambda name: get_average_rating(name, ratings)
+        )
 
-try:
-    # place_name 옆에 rating이 오도록 컬럼 순서 지정
-    display_columns = [
-        "place_name",
-        "rating",
-        "category_name",
-        "distance",
-        "road_address_name",
-        "phone",
-    ]
-    available_columns = [col for col in display_columns if col in df_with_rating.columns]
-    if available_columns:
-        st.dataframe(df_with_rating[available_columns])
+    try:
+        if not df_with_rating.empty:
+            # place_name 옆에 rating이 오도록 컬럼 순서 지정
+            display_columns = [
+                "place_name",
+                "rating",
+                "category_name",
+                "distance",
+                "road_address_name",
+                "phone",
+            ]
+            available_columns = [col for col in display_columns if col in df_with_rating.columns]
+            if available_columns:
+                st.dataframe(df_with_rating[available_columns])
+            else:
+                st.dataframe(df_with_rating)
+        else:
+            st.info("현재 등록된 맛집/카페가 없습니다.")
+    except Exception as e:
+        st.error("데이터프레임 표시에 실패했습니다.")
+        st.dataframe(df_with_rating)  # 실패 시 원본이라도 표시
+
+    st.markdown("---")
+
+    # 🗑 리스트에서 가게 삭제 기능
+    if not df_with_rating.empty:
+        st.subheader("가게 삭제하기 🗑️")
+
+        delete_options = df_with_rating["place_name"].dropna().unique().tolist()
+        delete_choice = st.selectbox(
+            "삭제할 가게를 선택하세요",
+            ["선택 안 함"] + delete_options,
+            key="delete_place_select",
+        )
+
+        if st.button("선택한 가게 삭제하기 🗑️"):
+            if delete_choice == "선택 안 함":
+                st.warning("삭제할 가게를 먼저 선택해 주세요.")
+            else:
+                # session_state.df에서 해당 가게 삭제
+                st.session_state.df = st.session_state.df[
+                    st.session_state.df["place_name"] != delete_choice
+                ].reset_index(drop=True)
+
+                # 파일에도 반영
+                try:
+                    st.session_state.df.to_json(
+                        "restaurants.json",
+                        force_ascii=False,
+                        orient="records",
+                        indent=2,
+                    )
+                    st.success(f"'{delete_choice}' 가(이) 목록에서 삭제되었습니다. (파일에도 저장 완료)")
+                except Exception as e:
+                    st.warning(f"메모리에서는 삭제했지만 파일 저장에 실패했습니다: {e}")
+
+                # 화면 갱신
+                st.experimental_rerun()
     else:
-        st.dataframe(df_with_rating)
-except Exception as e:
-    st.error("데이터프레임 표시에 실패했습니다.")
-    st.dataframe(df_with_rating)  # 실패 시 원본이라도 표시
+        st.caption("삭제할 가게가 없습니다.")
 
 st.divider()
 
 # -----------------------------
 # 5. 새 음식점 추가하기 기능
-# (요청: 리스트 아래로 이동 + 카테고리 드롭다운)
+# (리스트 아래에 위치 + 카테고리 드롭다운 & "음식점 > 카테고리" 저장)
 # -----------------------------
 with st.expander("🍽 새 맛집/카페 추가하기", expanded=False):
     st.write("임의로 음식점을 추가하면 위 전체 리스트와 추천에도 바로 반영됩니다.")
@@ -245,11 +288,16 @@ with st.expander("🍽 새 맛집/카페 추가하기", expanded=False):
         with col_left:
             place_name = st.text_input("가게 이름", placeholder="예) 센터필드 김밥천국")
 
-            # ✅ 카테고리를 직접 입력 대신 드롭다운으로 선택
+            # 카테고리 드롭다운
             category_options = ["한식", "양식", "중식", "일식", "분식", "간식"]
             selected_category = st.selectbox("카테고리 선택", category_options)
 
-            distance = st.number_input("거리 (m)", min_value=0, step=10, help="테헤란로 231 기준 대략 거리 (미터)")
+            distance = st.number_input(
+                "거리 (m)",
+                min_value=0,
+                step=10,
+                help="테헤란로 231 기준 대략 거리 (미터)",
+            )
 
         with col_right:
             road_address_name = st.text_input("도로명 주소", placeholder="예) 서울 강남구 테헤란로 231")
@@ -262,7 +310,7 @@ with st.expander("🍽 새 맛집/카페 추가하기", expanded=False):
         if not place_name:
             st.warning("가게 이름은 필수입니다.")
         else:
-            # ✅ 저장되는 category_name 형식: "음식점 > 선택된 카테고리"
+            # 저장되는 category_name 형식: "음식점 > 선택된 카테고리"
             category_name = f"음식점 > {selected_category}" if selected_category else None
 
             new_row = {
