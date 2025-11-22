@@ -136,61 +136,8 @@ if "df" not in st.session_state:
 df = st.session_state.df
 
 # -----------------------------
-# 2-1. 새 음식점 추가하기 기능
-# -----------------------------
-with st.expander("🍽 새 맛집/카페 추가하기", expanded=False):
-    st.write("임의로 음식점을 추가하면 아래 전체 리스트와 추천에도 바로 반영됩니다.")
-
-    with st.form("add_place_form"):
-        col_left, col_right = st.columns(2)
-
-        with col_left:
-            place_name = st.text_input("가게 이름", placeholder="예) 센터필드 김밥천국")
-            category_name = st.text_input("카테고리 이름", placeholder="예) 한식, 카페 등")
-            distance = st.number_input("거리 (m)", min_value=0, step=10, help="테헤란로 231 기준 대략 거리 (미터)")
-        with col_right:
-            road_address_name = st.text_input("도로명 주소", placeholder="예) 서울 강남구 테헤란로 231")
-            phone = st.text_input("전화번호", placeholder="예) 02-123-4567")
-            place_url = st.text_input("카카오맵/웹 링크", placeholder="지도 링크가 있으면 넣어주세요")
-
-        submitted = st.form_submit_button("추가하기 ✅")
-
-    if submitted:
-        if not place_name:
-            st.warning("가게 이름은 필수입니다.")
-        else:
-            new_row = {
-                "place_name": place_name,
-                "category_name": category_name,
-                "distance": int(distance) if distance is not None else None,
-                "road_address_name": road_address_name,
-                "phone": phone,
-                "place_url": place_url,
-            }
-
-            # 세션 DF에 추가
-            st.session_state.df = pd.concat(
-                [st.session_state.df, pd.DataFrame([new_row])],
-                ignore_index=True,
-            )
-            df = st.session_state.df  # 로컬 변수도 업데이트
-
-            # 파일에도 저장 (가능한 환경일 때)
-            try:
-                st.session_state.df.to_json(
-                    "restaurants.json",
-                    force_ascii=False,
-                    orient="records",
-                    indent=2,
-                )
-                st.success(f"'{place_name}' 이(가) 목록에 추가되었습니다. (파일에도 저장 완료)")
-            except Exception as e:
-                st.warning(f"메모리에는 추가되었지만 파일 저장에 실패했습니다: {e}")
-
-st.divider()
-
-# -----------------------------
 # 2-2. 평점 남기기 기능
+# (평점 섹션은 그대로 유지, 위치만 상단에 둠)
 # -----------------------------
 ratings = load_ratings()
 
@@ -282,3 +229,66 @@ try:
 except Exception as e:
     st.error("데이터프레임 표시에 실패했습니다.")
     st.dataframe(df_with_rating)  # 실패 시 원본이라도 표시
+
+st.divider()
+
+# -----------------------------
+# 5. 새 음식점 추가하기 기능
+# (요청: 리스트 아래로 이동 + 카테고리 드롭다운)
+# -----------------------------
+with st.expander("🍽 새 맛집/카페 추가하기", expanded=False):
+    st.write("임의로 음식점을 추가하면 위 전체 리스트와 추천에도 바로 반영됩니다.")
+
+    with st.form("add_place_form"):
+        col_left, col_right = st.columns(2)
+
+        with col_left:
+            place_name = st.text_input("가게 이름", placeholder="예) 센터필드 김밥천국")
+
+            # ✅ 카테고리를 직접 입력 대신 드롭다운으로 선택
+            category_options = ["한식", "양식", "중식", "일식", "분식", "간식"]
+            selected_category = st.selectbox("카테고리 선택", category_options)
+
+            distance = st.number_input("거리 (m)", min_value=0, step=10, help="테헤란로 231 기준 대략 거리 (미터)")
+
+        with col_right:
+            road_address_name = st.text_input("도로명 주소", placeholder="예) 서울 강남구 테헤란로 231")
+            phone = st.text_input("전화번호", placeholder="예) 02-123-4567")
+            place_url = st.text_input("카카오맵/웹 링크", placeholder="지도 링크가 있으면 넣어주세요")
+
+        submitted = st.form_submit_button("추가하기 ✅")
+
+    if submitted:
+        if not place_name:
+            st.warning("가게 이름은 필수입니다.")
+        else:
+            # ✅ 저장되는 category_name 형식: "음식점 > 선택된 카테고리"
+            category_name = f"음식점 > {selected_category}" if selected_category else None
+
+            new_row = {
+                "place_name": place_name,
+                "category_name": category_name,
+                "distance": int(distance) if distance is not None else None,
+                "road_address_name": road_address_name,
+                "phone": phone,
+                "place_url": place_url,
+            }
+
+            # 세션 DF에 추가
+            st.session_state.df = pd.concat(
+                [st.session_state.df, pd.DataFrame([new_row])],
+                ignore_index=True,
+            )
+            df = st.session_state.df  # 로컬 변수도 업데이트
+
+            # 파일에도 저장 (가능한 환경일 때)
+            try:
+                st.session_state.df.to_json(
+                    "restaurants.json",
+                    force_ascii=False,
+                    orient="records",
+                    indent=2,
+                )
+                st.success(f"'{place_name}' 이(가) 목록에 추가되었습니다. (파일에도 저장 완료)")
+            except Exception as e:
+                st.warning(f"메모리에는 추가되었지만 파일 저장에 실패했습니다: {e}")
