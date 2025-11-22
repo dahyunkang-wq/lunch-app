@@ -262,45 +262,77 @@ st.divider()
 
 # -----------------------------
 # 4. 전체 맛집 목록 보여주기 (평점 포함) + 접기/펼치기 + 삭제 기능
+#    ➕ 표에서 직접 수정 가능하도록 data_editor 사용
 # -----------------------------
 with st.expander("📋 1.5km 이내 전체 맛집/카페 리스트", expanded=False):
     st.write("--- 1.5km 이내 전체 맛집/카페 리스트 ---")
 
-    # 평점을 컬럼으로 붙이기
     ratings = load_ratings()  # 최신 값 다시 로드
-    df_with_rating = df.copy()
-    if not df_with_rating.empty:
-        df_with_rating["rating"] = df_with_rating["place_name"].apply(
+    df_current = st.session_state.df  # 항상 최신 DF 기준
+
+    if df_current.empty:
+        st.info("현재 등록된 맛집/카페가 없습니다.")
+    else:
+        # 편집용 DF 생성 + 평점 컬럼 추가
+        df_for_edit = df_current.copy()
+        df_for_edit["rating"] = df_for_edit["place_name"].apply(
             lambda name: get_average_rating(name, ratings)
         )
 
-    try:
-        if not df_with_rating.empty:
-            # place_name 옆에 rating이 오도록 컬럼 순서 지정
-            display_columns = [
-                "place_name",
-                "rating",
-                "category_name",
-                "distance",
-                "road_address_name",
-                "phone",
-            ]
-            available_columns = [col for col in display_columns if col in df_with_rating.columns]
-            if available_columns:
-                st.dataframe(df_with_rating[available_columns])
-            else:
-                st.dataframe(df_with_rating)
-        else:
-            st.info("현재 등록된 맛집/카페가 없습니다.")
-    except Exception as e:
-        st.error("데이터프레임 표시에 실패했습니다.")
-        st.dataframe(df_with_rating)  # 실패 시 원본이라도 표시
+        # 컬럼 순서: place_name 옆에 rating이 오도록 구성
+        column_order = [
+            "place_name",
+            "rating",             # 읽기용(저장 시에는 무시)
+            "category_name",
+            "distance",
+            "road_address_name",
+            "phone",
+            "place_url",          # URL도 표에서 직접 수정할 수 있게 포함
+        ]
+        # 실제 존재하는 컬럼만 사용
+        column_order = [c for c in column_order if c in df_for_edit.columns]
+
+        st.caption("※ 표 안에서 category_name, distance, 주소, 전화번호 등을 직접 수정할 수 있습니다.")
+
+        edited_df = st.data_editor(
+            df_for_edit[column_order],
+            num_rows="fixed",        # 행 추가/삭제는 막고 값만 수정하도록
+            key="restaurant_editor",
+        )
+
+        # ✅ 편집된 내용을 저장하는 버튼
+        if st.button("변경사항 저장하기 💾"):
+            # rating 컬럼은 계산용이므로 실제 DF에는 저장하지 않음
+            updated_df = edited_df.drop(columns=["rating"], errors="ignore")
+
+            # 세션 DF 갱신
+            st.session_state.df = updated_df
+
+            # 파일에도 저장
+            try:
+                st.session_state.df.to_json(
+                    "restaurants.json",
+                    force_ascii=False,
+                    orient="records",
+                    indent=2,
+                )
+                st.success("변경사항이 저장되었습니다. (파일에도 저장 완료)")
+            except Exception as e:
+                st.warning(f"화면에는 반영되었지만 파일 저장에 실패했습니다: {e}")
+
+            # 화면 새로고침
+            st.rerun()
 
     st.markdown("---")
 
-    # 🗑 리스트에서 가게 삭제 기능
-    if not df_with_rating.empty:
+    # 🗑 리스트에서 가게 삭제 기능 (기존 로직 유지)
+    if not st.session_state.df.empty:
         st.subheader("가게 삭제하기 🗑️")
+
+        df_with_rating = st.session_state.df.copy()
+        df_with_rating["rating"] = df_with_rating["place_name"].apply(
+            lambda name: get_average_rating(name, ratings)
+        )
 
         delete_options = df_with_rating["place_name"].dropna().unique().tolist()
         delete_choice = st.selectbox(
@@ -330,12 +362,10 @@ with st.expander("📋 1.5km 이내 전체 맛집/카페 리스트", expanded=Fa
                 except Exception as e:
                     st.warning(f"메모리에서는 삭제했지만 파일 저장에 실패했습니다: {e}")
 
-                # 화면 갱신
                 st.rerun()
     else:
         st.caption("삭제할 가게가 없습니다.")
 
-st.divider()
 
 # -----------------------------
 # 5. 새 음식점 추가하기 기능
