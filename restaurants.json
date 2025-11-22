@@ -238,20 +238,6 @@
     "y": "37.5030559293686"
   },
   {
-    "address_name": "서울 강남구 역삼동 647-13",
-    "category_group_code": "FD6",
-    "category_group_name": "음식점",
-    "category_name": "음식점 > 술집 > 호프,요리주점",
-    "distance": "545",
-    "id": "27296186",
-    "phone": "02-564-9939",
-    "place_name": "요술포차 역삼점",
-    "place_url": "http://place.map.kakao.com/27296186",
-    "road_address_name": "서울 강남구 테헤란로19길 5",
-    "x": "127.03353238545199",
-    "y": "37.50040769003451"
-  },
-  {
     "address_name": "서울 강남구 역삼동 669-18",
     "category_group_code": "FD6",
     "category_group_name": "음식점",
@@ -292,20 +278,6 @@
     "road_address_name": "서울 강남구 논현로85길 11",
     "x": "127.036459611634",
     "y": "37.4990093623649"
-  },
-  {
-    "address_name": "서울 강남구 역삼동 736-54",
-    "category_group_code": "FD6",
-    "category_group_name": "음식점",
-    "category_name": "음식점 > 술집 > 실내포장마차",
-    "distance": "396",
-    "id": "25703673",
-    "phone": "02-588-9292",
-    "place_name": "김봉남포장마차 역삼2호점",
-    "place_url": "http://place.map.kakao.com/25703673",
-    "road_address_name": "서울 강남구 논현로87길 15",
-    "x": "127.035645666803",
-    "y": "37.4996186909494"
   },
   {
     "address_name": "서울 강남구 역삼동 669-15",
@@ -770,20 +742,6 @@
     "distance": "1"
   },
   {
-    "id": "2044727317",
-    "place_name": "1914라운지&바",
-    "category_name": "음식점 > 술집 > 칵테일바",
-    "category_group_code": "FD6",
-    "category_group_name": "음식점",
-    "phone": "02-727-7640",
-    "address_name": "서울 강남구 역삼동 676",
-    "road_address_name": "서울 강남구 테헤란로 231",
-    "x": "127.041491916603",
-    "y": "37.502886532545",
-    "place_url": "http://place.map.kakao.com/2044727317",
-    "distance": "12"
-  },
-  {
     "id": "2044587542",
     "place_name": "이타닉 가든",
     "category_name": "음식점 > 한식",
@@ -966,20 +924,6 @@
     "distance": "85"
   },
   {
-    "id": "302203396",
-    "place_name": "알렌 컨티뉴엄",
-    "category_name": "음식점 > 술집 > 와인바",
-    "category_group_code": "FD6",
-    "category_group_name": "음식점",
-    "phone": "",
-    "address_name": "서울 강남구 역삼동 676",
-    "road_address_name": "서울 강남구 테헤란로 231",
-    "x": "127.041700406344",
-    "y": "37.5036000555404",
-    "place_url": "http://place.map.kakao.com/302203396",
-    "distance": "85"
-  },
-  {
     "id": "917838642",
     "place_name": "미미담 역삼점",
     "category_name": "음식점 > 한식 > 냉면",
@@ -1008,34 +952,6 @@
     "distance": "87"
   },
   {
-    "id": "12119487",
-    "place_name": "엠파이어바",
-    "category_name": "음식점 > 술집 > 칵테일바",
-    "category_group_code": "FD6",
-    "category_group_name": "음식점",
-    "phone": "",
-    "address_name": "서울 강남구 역삼동 677-5",
-    "road_address_name": "서울 강남구 언주로93길 21",
-    "x": "127.040338588605",
-    "y": "37.5033149096672",
-    "place_url": "http://place.map.kakao.com/12119487",
-    "distance": "102"
-  },
-  {
-    "id": "887468501",
-    "place_name": "츄라우미 역삼본점",
-    "category_name": "음식점 > 술집 > 일본식주점",
-    "category_group_code": "FD6",
-    "category_group_name": "음식점",
-    "phone": "02-558-7771",
-    "address_name": "서울 강남구 역삼동 677-5",
-    "road_address_name": "서울 강남구 언주로93길 21",
-    "x": "127.040325028884",
-    "y": "37.5033365384302",
-    "place_url": "http://place.map.kakao.com/887468501",
-    "distance": "104"
-  },
-  {
     "id": "601300226",
     "place_name": "유미식당딜리버리",
     "category_name": "음식점 > 한식",
@@ -1047,20 +963,6 @@
     "x": "127.04030692793133",
     "y": "37.50332573254114",
     "place_url": "http://place.map.kakao.com/601300226",
-    "distance": "105"
-  },
-  {
-    "id": "2133132182",
-    "place_name": "르네상스티파니",
-    "category_name": "음식점 > 술집",
-    "category_group_code": "FD6",
-    "category_group_name": "음식점",
-    "phone": "",
-    "address_name": "서울 강남구 역삼동 677-5",
-    "road_address_name": "서울 강남구 언주로93길 21",
-    "x": "127.040306929869",
-    "y": "37.5033293365627",
-    "place_url": "http://place.map.kakao.com/2133132182",
     "distance": "105"
   },
   {
@@ -1092,20 +994,6 @@
     "distance": "105"
   },
   {
-    "id": "716415611",
-    "place_name": "만타",
-    "category_name": "음식점 > 술집 > 칵테일바",
-    "category_group_code": "FD6",
-    "category_group_name": "음식점",
-    "phone": "02-6952-5321",
-    "address_name": "서울 강남구 역삼동 677-7",
-    "road_address_name": "서울 강남구 테헤란로37길 13-6",
-    "x": "127.040175618452",
-    "y": "37.5031023278894",
-    "place_url": "http://place.map.kakao.com/716415611",
-    "distance": "107"
-  },
-  {
     "id": "1054657548",
     "place_name": "남영동양문 역삼점",
     "category_name": "음식점 > 한식 > 육류,고기",
@@ -1118,20 +1006,6 @@
     "y": "37.5033527704186",
     "place_url": "http://place.map.kakao.com/1054657548",
     "distance": "108"
-  },
-  {
-    "id": "66754561",
-    "place_name": "Bar221",
-    "category_name": "음식점 > 술집",
-    "category_group_code": "FD6",
-    "category_group_name": "음식점",
-    "phone": "0503-7150-9797",
-    "address_name": "서울 강남구 역삼동 677-26",
-    "road_address_name": "서울 강남구 테헤란로 221",
-    "x": "127.040438651879",
-    "y": "37.5022192525851",
-    "place_url": "http://place.map.kakao.com/66754561",
-    "distance": "109"
   },
   {
     "id": "712590869",
