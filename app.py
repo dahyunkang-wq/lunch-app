@@ -89,36 +89,7 @@ def get_average_rating(place_name: str, ratings: dict) -> float | None:
 
 
 # -----------------------------
-# 1. 상단에 테헤란로 231 현재 기온 표시
-# -----------------------------
-with st.container():
-    st.subheader("📍 테헤란로 231 현재 날씨")
-
-    weather = get_current_weather(CENTER_LAT, CENTER_LON)
-
-    if weather:
-        col1, col2 = st.columns(2)
-
-        with col1:
-            if weather["temp"] is not None:
-                st.metric("현재 기온", f"{weather['temp']:.1f} ℃")
-            else:
-                st.metric("현재 기온", "정보 없음")
-
-        with col2:
-            if weather["windspeed"] is not None:
-                st.write(f"풍속: **{weather['windspeed']} m/s**")
-            if weather["winddirection"] is not None:
-                st.write(f"풍향: **{weather['winddirection']}°**")
-            if weather["time"]:
-                st.caption(f"관측 시각 (API 기준): {weather['time']}")
-    else:
-        st.info("현재 날씨 정보를 가져올 수 없습니다. 잠시 후 다시 시도해 주세요.")
-
-st.divider()  # 구분선
-
-# -----------------------------
-# 2. JSON 데이터 읽어오기
+# 2. JSON 데이터 읽어오기 (랜덤 버튼이 위쪽으로 올라갈 것이므로 먼저 로드)
 # -----------------------------
 try:
     base_df = pd.read_json("restaurants.json")
@@ -135,11 +106,64 @@ if "df" not in st.session_state:
 
 df = st.session_state.df
 
+# 평점도 미리 로드 (랜덤 추천에서 사용)
+ratings = load_ratings()
+
+# -----------------------------
+# 1. 상단에 테헤란로 231 현재 기온 표시 + 랜덤 추천 버튼
+# -----------------------------
+with st.container():
+    # 1. 제목 글자 크기 줄이기 (subheader 대신 작은 헤딩 사용)
+    st.markdown("##### 📍 테헤란로 231 현재 날씨")
+
+    weather = get_current_weather(CENTER_LAT, CENTER_LON)
+
+    if weather:
+        # 2. 현재 기온만 보여주고, 풍속/풍향은 숨김
+        if weather["temp"] is not None:
+            st.metric("현재 기온", f"{weather['temp']:.1f} ℃")
+        else:
+            st.metric("현재 기온", "정보 없음")
+
+        # 관측 시각은 그대로 표시
+        if weather["time"]:
+            st.caption(f"관측 시각 (API 기준): {weather['time']}")
+    else:
+        st.info("현재 날씨 정보를 가져올 수 없습니다. 잠시 후 다시 시도해 주세요.")
+
+    st.markdown("---")
+
+    # 3. 랜덤으로 하나만 골라줘! 버튼을 날씨/기온 정보 바로 아래에 배치
+    if st.button("랜덤으로 하나만 골라줘! 🎲"):
+        if df.empty:
+            st.warning("맛집 데이터가 비어있습니다. restaurants.json 파일 또는 추가 기능을 확인하세요.")
+        else:
+            random_choice = df.sample(1).iloc[0]
+            place_name = random_choice.get("place_name", "이름 없음")
+
+            st.balloons()
+            st.success(f"오늘은 **{random_choice.get('category_name', '알 수 없음')}** 어때요?")
+
+            st.header(f"추천 맛집: **{place_name}**")
+
+            # 추천된 가게의 현재 평균 평점 표시
+            avg_rating = get_average_rating(place_name, ratings)
+            if avg_rating is not None:
+                st.write(f"현재 평균 평점: ⭐ **{avg_rating:.1f} / 5.0**")
+
+            if 'distance' in random_choice and pd.notna(random_choice['distance']):
+                st.subheader(f"내 위치(테헤란로 231)에서 **{random_choice['distance']}m** 떨어져 있어요!")
+
+            # 카카오맵 링크가 있으면 같이 보여주기
+            if 'place_url' in random_choice and random_choice['place_url']:
+                st.markdown(f"[카카오맵에서 위치 보기]({random_choice['place_url']})")
+
+st.divider()  # 구분선
+
+
 # -----------------------------
 # 2-2. 평점 남기기 기능
 # -----------------------------
-ratings = load_ratings()
-
 with st.expander("⭐ 맛집 평점 남기기", expanded=False):
     if df.empty:
         st.info("먼저 맛집 데이터를 추가해 주세요.")
@@ -168,35 +192,6 @@ with st.expander("⭐ 맛집 평점 남기기", expanded=False):
             st.success(f"'{selected_place}' 평점이 등록되었습니다. 현재 평균 평점: {avg:.1f} / 5.0")
 
 st.divider()
-
-# -----------------------------
-# 3. "랜덤으로 하나만 골라줘!" 버튼
-# -----------------------------
-if st.button("랜덤으로 하나만 골라줘! 🎲"):
-    if df.empty:
-        st.warning("맛집 데이터가 비어있습니다. restaurants.json 파일 또는 추가 기능을 확인하세요.")
-    else:
-        random_choice = df.sample(1).iloc[0]
-        place_name = random_choice.get("place_name", "이름 없음")
-
-        st.balloons()
-        st.success(f"오늘은 **{random_choice.get('category_name', '알 수 없음')}** 어때요?")
-
-        st.header(f"추천 맛집: **{place_name}**")
-
-        # 추천된 가게의 현재 평균 평점 표시
-        avg_rating = get_average_rating(place_name, ratings)
-        if avg_rating is not None:
-            st.write(f"현재 평균 평점: ⭐ **{avg_rating:.1f} / 5.0**")
-
-        if 'distance' in random_choice and pd.notna(random_choice['distance']):
-            st.subheader(f"내 위치(테헤란로 231)에서 **{random_choice['distance']}m** 떨어져 있어요!")
-
-        # 카카오맵 링크가 있으면 같이 보여주기
-        if 'place_url' in random_choice and random_choice['place_url']:
-            st.markdown(f"[카카오맵에서 위치 보기]({random_choice['place_url']})")
-
-st.divider()  # 구분선
 
 # -----------------------------
 # 4. 전체 맛집 목록 보여주기 (평점 포함) + 접기/펼치기 + 삭제 기능
