@@ -1,7 +1,9 @@
 import streamlit as st
 import pandas as pd
 import random
-import requests  # 🔸 무료 날씨 API 호출용
+import requests  # 무료 날씨 API 호출용
+import os
+import json
 
 # -----------------------------
 # 기본 설정
@@ -12,6 +14,8 @@ st.title("오늘 점심 뭐 먹지? 🍱")
 # 테헤란로 231 근방 좌표 (대략값)
 CENTER_LAT = 37.5032
 CENTER_LON = 127.0415
+
+RATINGS_FILE = "ratings.json"  # 평점 저장 파일 경로
 
 # -----------------------------
 # 무료 날씨 API (Open-Meteo) 호출 함수
@@ -48,9 +52,40 @@ def get_current_weather(lat: float, lon: float):
         }
 
     except Exception as e:
-        # streamlit 화면에만 에러 표시
         st.error(f"날씨 정보를 가져오는 데 실패했습니다: {e}")
         return None
+
+
+# -----------------------------
+# 평점 데이터 로드/저장 함수
+# -----------------------------
+def load_ratings() -> dict:
+    """ratings.json 파일에서 평점 데이터 로드"""
+    if not os.path.exists(RATINGS_FILE):
+        return {}
+    try:
+        with open(RATINGS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_ratings(ratings: dict):
+    """평점 데이터를 ratings.json에 저장"""
+    with open(RATINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(ratings, f, ensure_ascii=False, indent=2)
+
+
+def get_average_rating(place_name: str, ratings: dict) -> float | None:
+    """특정 가게의 평균 평점 계산"""
+    info = ratings.get(place_name)
+    if not info:
+        return None
+    count = info.get("count", 0)
+    total = info.get("sum", 0)
+    if count <= 0:
+        return None
+    return round(total / count, 1)
 
 
 # -----------------------------
@@ -92,7 +127,7 @@ except Exception as e:
         f"맛집 데이터(restaurants.json)를 불러오는 데 실패했습니다. "
         f"파일이 정확히 있는지 확인하세요. (오류: {e})"
     )
-    base_df = pd.DataFrame()  # 그래도 앱은 죽지 않게 빈 DF로 시작
+    base_df = pd.DataFrame()
 
 # 세션 상태에 DF 저장 (추가/수정 반영용)
 if "df" not in st.session_state:
@@ -155,18 +190,59 @@ with st.expander("🍽 새 맛집/카페 추가하기", expanded=False):
 st.divider()
 
 # -----------------------------
-# 3. "랜덤으로 하나만 골라줘!" 버튼 (기존 점심 추천 로직)
+# 2-2. 평점 남기기 기능
+# -----------------------------
+ratings = load_ratings()
+
+with st.expander("⭐ 맛집 평점 남기기", expanded=False):
+    if df.empty:
+        st.info("먼저 맛집 데이터를 추가해 주세요.")
+    else:
+        place_options = df["place_name"].dropna().unique().tolist()
+        selected_place = st.selectbox("가게 선택", place_options)
+
+        # 기본 평점 5.0, 0.1 단위로 조정 가능
+        score = st.slider("평점 (0.0 ~ 5.0점)", 0.0, 5.0, 5.0, 0.1)
+
+        with st.form("rating_form"):
+            st.write(f"선택한 가게: **{selected_place}**")
+            st.write(f"이번에 줄 점수: **{score:.1f}점**")
+            submitted_rating = st.form_submit_button("평점 등록하기 ✅")
+
+        if submitted_rating:
+            # 기존 데이터 불러와서 갱신
+            ratings = load_ratings()
+            info = ratings.get(selected_place, {"sum": 0.0, "count": 0})
+            info["sum"] = info.get("sum", 0.0) + float(score)
+            info["count"] = info.get("count", 0) + 1
+            ratings[selected_place] = info
+            save_ratings(ratings)
+
+            avg = get_average_rating(selected_place, ratings)
+            st.success(f"'{selected_place}' 평점이 등록되었습니다. 현재 평균 평점: {avg:.1f} / 5.0")
+
+st.divider()
+
+# -----------------------------
+# 3. "랜덤으로 하나만 골라줘!" 버튼
 # -----------------------------
 if st.button("랜덤으로 하나만 골라줘! 🎲"):
     if df.empty:
         st.warning("맛집 데이터가 비어있습니다. restaurants.json 파일 또는 추가 기능을 확인하세요.")
     else:
         random_choice = df.sample(1).iloc[0]
+        place_name = random_choice.get("place_name", "이름 없음")
 
         st.balloons()
         st.success(f"오늘은 **{random_choice.get('category_name', '알 수 없음')}** 어때요?")
 
-        st.header(f"추천 맛집: **{random_choice.get('place_name', '이름 없음')}**")
+        st.header(f"추천 맛집: **{place_name}**")
+
+        # 추천된 가게의 현재 평균 평점 표시
+        avg_rating = get_average_rating(place_name, ratings)
+        if avg_rating is not None:
+            st.write(f"현재 평균 평점: ⭐ **{avg_rating:.1f} / 5.0**")
+
         if 'distance' in random_choice and pd.notna(random_choice['distance']):
             st.subheader(f"내 위치(테헤란로 231)에서 **{random_choice['distance']}m** 떨어져 있어요!")
 
@@ -177,16 +253,32 @@ if st.button("랜덤으로 하나만 골라줘! 🎲"):
 st.divider()  # 구분선
 
 # -----------------------------
-# 4. 전체 맛집 목록 보여주기 (컬럼 정리)
+# 4. 전체 맛집 목록 보여주기 (평점 포함)
 # -----------------------------
 st.write("--- 1.5km 이내 전체 맛집/카페 리스트 ---")
+
+# 평점을 컬럼으로 붙이기
+ratings = load_ratings()  # 최신 값 다시 로드
+df_with_rating = df.copy()
+df_with_rating["rating"] = df_with_rating["place_name"].apply(
+    lambda name: get_average_rating(name, ratings)
+)
+
 try:
-    display_columns = ['place_name', 'category_name', 'distance', 'road_address_name', 'phone']
-    available_columns = [col for col in display_columns if col in df.columns]
+    # place_name 옆에 rating이 오도록 컬럼 순서 지정
+    display_columns = [
+        "place_name",
+        "rating",
+        "category_name",
+        "distance",
+        "road_address_name",
+        "phone",
+    ]
+    available_columns = [col for col in display_columns if col in df_with_rating.columns]
     if available_columns:
-        st.dataframe(df[available_columns])
+        st.dataframe(df_with_rating[available_columns])
     else:
-        st.dataframe(df)
+        st.dataframe(df_with_rating)
 except Exception as e:
     st.error("데이터프레임 표시에 실패했습니다.")
-    st.dataframe(df)  # 실패 시 원본이라도 표시
+    st.dataframe(df_with_rating)  # 실패 시 원본이라도 표시
